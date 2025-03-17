@@ -1,4 +1,4 @@
-# ASCIICam
+# ASCIICAM 
 
 ASCIICam is a web application that transforms your camera feed into real-time ASCII art. It converts video input into text characters, creating a unique visual experience reminiscent of early computer art.
 
@@ -12,7 +12,7 @@ ASCIICam is a web application that transforms your camera feed into real-time AS
 
 ## How It Works
 
-ASCIICam uses your device's camera to capture video frames, which are then processed in real-time. Each pixel's brightness is mapped to a corresponding ASCII character, with brighter areas represented by denser characters and darker areas by spaces.
+ASCIICAM uses your device's camera to capture video frames, which are then processed in real-time. Each pixel's brightness is mapped to a corresponding ASCII character, with brighter areas represented by denser characters and darker areas by spaces.
 
 The application uses a carefully selected set of ASCII characters to represent different brightness levels:
 ```
@@ -36,7 +36,7 @@ The application uses a carefully selected set of ASCII characters to represent d
 
 ## Browser Compatibility
 
-ASCIICam works best on modern browsers that support the MediaDevices API:
+ASCIICAM works best on modern browsers that support the MediaDevices API:
 - Chrome (desktop and mobile)
 - Firefox (desktop and mobile)
 - Safari (iOS 11+ and macOS)
@@ -44,7 +44,7 @@ ASCIICam works best on modern browsers that support the MediaDevices API:
 
 ## Privacy
 
-ASCIICam processes all video data locally in your browser. No images or video are transmitted to any server.
+ASCIICAM processes all video data locally in your browser. No images or video are transmitted to any server.
 
 ## Installation
 
@@ -52,7 +52,7 @@ Simply host the HTML file on any web server, or open it directly in a browser. N
 
 ## License
 
-ASCIICam is open source and free to use, modify, and distribute.
+ASCIICAM is open source and free to use, modify, and distribute.
 
 ## Credits
 
