@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCIICAM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #main-container {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        #ascii-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+        
+        #ascii-output {
+            font-family: 'Courier New', monospace;
+            font-size: 6px;
+            line-height: 0.8;
+            letter-spacing: 0;
+            white-space: pre;
+            color: #fff;
+            text-align: center;
+            background-color: #000;
+        }
+        
+        #video {
+            display: none;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .title {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            z-index: 200;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        @media (min-width: 768px) {
+            .title {
+                font-size: 24px;
+                top: 20px;
+                left: 20px;
+            }
+        }
+        
+        .capture-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+        
+        .camera-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+        
+        @media (min-width: 768px) {
+            #ascii-output {
+                font-size: 10px;
+                line-height: 0.85;
+            }
+            
+            .capture-btn {
+                bottom: 30px;
+                right: 30px;
+                width: 70px;
+                height: 70px;
+            }
+            
+            .camera-btn {
+                bottom: 30px;
+                left: 30px;
+                width: 70px;
+                height: 70px;
+            }
+        }
+        
+        #error-message {
+            color: red;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">ASCIICAM</div>
+    <div id="main-container">
+        <div id="ascii-container">
+            <pre id="ascii-output"></pre>
+        </div>
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <button class="capture-btn" id="capture-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </button>
+        <button class="camera-btn" id="camera-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 16v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path>
+            </svg>
+        </button>
+        <div id="error-message"></div>
+        <div class="flash" id="flash"></div>
+    </div>
+
+    <script>
+        // ASCII characters from dark to light (proper order for dark theme)
+        const asciiChars = [' ', '.', ',', '-', '~', '+', '=', 'o', 'a', '#', '%', '8', '@'];
+        
+        // DOM Elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const asciiOutput = document.getElementById('ascii-output');
+        const captureBtn = document.getElementById('capture-btn');
+        const cameraBtn = document.getElementById('camera-btn');
+        const errorMessage = document.getElementById('error-message');
+        const flash = document.getElementById('flash');
+        
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        let streaming = false;
+        let width = window.innerWidth;
+        let height = 0;
+        let asciiWidth = Math.floor(width / 6);
+        let asciiHeight = 0;
+        let facingMode = "user"; // Start with front camera
+        
+        // Initialize camera with current camera selection
+        function initCamera() {
+            // Stop any existing stream
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: facingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+                errorMessage.style.display = "none";
+            })
+            .catch(err => {
+                console.error("An error occurred: " + err);
+                errorMessage.textContent = "Camera error: " + err.message;
+                errorMessage.style.display = "block";
+            });
+        }
+        
+        // Switch camera between front and back
+        cameraBtn.addEventListener('click', () => {
+            facingMode = facingMode === "user" ? "environment" : "user";
+            initCamera();
+        });
+        
+        // When video metadata is loaded, set up dimensions
+        video.addEventListener('canplay', function() {
+            if (!streaming) {
+                height = video.videoHeight / (video.videoWidth / width);
+                
+                if (isNaN(height)) {
+                    height = width / (4/3);
+                }
+                
+                video.setAttribute('width', width);
+                video.setAttribute('height', height);
+                canvas.setAttribute('width', width);
+                canvas.setAttribute('height', height);
+                
+                asciiHeight = Math.floor(height / 10);
+                
+                streaming = true;
+                
+                // Start the ASCII conversion
+                convertToAscii();
+            }
+        }, false);
+        
+        // Convert video frame to ASCII
+        function convertToAscii() {
+            if (!streaming) return;
+            
+            ctx.drawImage(video, 0, 0, width, height);
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            
+            // Calculate aspect ratio and resolution
+            const aspectRatio = width / height;
+            const calculatedHeight = Math.floor(asciiWidth / aspectRatio);
+            const finalAsciiHeight = Math.min(calculatedHeight, asciiHeight);
+            
+            // Skip pixels to match resolution
+            // Use smaller skip values to increase detail
+            const skipX = Math.max(1, Math.floor(width / (asciiWidth * 2)));
+            const skipY = Math.max(1, Math.floor(height / (finalAsciiHeight * 2)));
+            
+            let result = '';
+            
+            for (let y = 0; y < height; y += skipY) {
+                for (let x = 0; x < width; x += skipX) {
+                    const idx = (y * width + x) * 4;
+                    
+                    // Calculate grayscale value - weighted for human perception
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    
+                    // Map grayscale to ASCII character
+                    const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
+                    result += asciiChars[charIndex];
+                }
+                // Add newline except for the last line
+                if (y + skipY < height) {
+                    result += '\n';
+                }
+            }
+            
+            asciiOutput.textContent = result;
+            
+            // Call the next frame
+            requestAnimationFrame(convertToAscii);
+        }
+        
+        // Capture and download current ASCII view
+        captureBtn.addEventListener('click', function() {
+            // Flash effect
+            flash.style.opacity = "0.7";
+            setTimeout(() => {
+                flash.style.opacity = "0";
+            }, 100);
+            
+            // Create a new canvas for the ASCII art as an image
+            const downloadCanvas = document.createElement('canvas');
+            const downloadCtx = downloadCanvas.getContext('2d');
+            
+            // Set the size based on the ASCII content
+            const lines = asciiOutput.textContent.split('\n');
+            const lineCount = lines.length;
+            const lineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
+            
+            // Use a higher resolution for the download image that matches what's on screen
+            const computedStyle = window.getComputedStyle(asciiOutput);
+            const fontSize = parseFloat(computedStyle.fontSize);
+            const charWidth = fontSize * 0.6;
+            const charHeight = fontSize * 1.2;
+            downloadCanvas.width = lineLength * charWidth;
+            downloadCanvas.height = lineCount * charHeight;
+            
+            // Fill with black background
+            downloadCtx.fillStyle = '#000';
+            downloadCtx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
+            
+            // Set text properties
+            downloadCtx.font = `${charHeight}px 'Courier New', monospace`;
+            downloadCtx.fillStyle = '#fff';
+            downloadCtx.textBaseline = 'top';
+            
+            // Draw the ASCII characters
+            lines.forEach((line, i) => {
+                // Only draw non-empty lines
+                if (line.trim().length > 0) {
+                    downloadCtx.fillText(line, 0, i * charHeight);
+                }
+            });
+            
+            // Create and trigger download
+            const dataUrl = downloadCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'asciicam_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            width = window.innerWidth;
+            asciiWidth = Math.floor(width / 6);
+            
+            if (streaming) {
+                height = video.videoHeight / (video.videoWidth / width);
+                
+                if (isNaN(height)) {
+                    height = width / (4/3);
+                }
+                
+                video.setAttribute('width', width);
+                video.setAttribute('height', height);
+                canvas.setAttribute('width', width);
+                canvas.setAttribute('height', height);
+                
+                asciiHeight = Math.floor(height / 10);
+            }
+        }, false);
+        
+        // Initialize camera on page load
+        initCamera();
+    </script>
+</body>
+</html>
