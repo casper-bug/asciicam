@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Camera</title>
+    <title>ASCIICAM</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -13,23 +13,26 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            align-items: center;
             height: 100vh;
-            padding: 20px;
-            text-align: center;
+            padding: 10px;
             overflow: hidden;
         }
         pre { 
-            font-size: 10px; 
-            line-height: 10px; 
+            font-size: 8px; 
+            line-height: 8px; 
             white-space: pre-wrap; 
             word-break: break-word; 
             flex-grow: 1;
             text-align: center;
+            width: 100%;
+            padding: 10px;
         }
-        video, canvas { display: none; }
+        video { display: none; }
         .bottom-bar {
             background: #222;
-            padding: 15px;
+            padding: 12px;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -37,12 +40,12 @@
         }
         .bottom-bar span {
             flex: 1;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             text-align: center;
         }
         .bottom-bar button {
-            padding: 10px 15px;
+            padding: 8px 12px;
             font-size: 14px;
             cursor: pointer;
             border: 2px solid black;
@@ -57,15 +60,4 @@
     </style>
 </head>
 <body>
-    <video id="video" autoplay></video>
-    <pre id="ascii"></pre>
-
-    <div class="bottom-bar">
-        <span>ASCIICam</span>
-        <button onclick="captureAscii()">Capture & Download</button>
-    </div>
-
-    <canvas id="captureCanvas"></canvas>
-    <script src="script.js"></script>
-</body>
-</html>
+    <video id="video" autoplay></vid
