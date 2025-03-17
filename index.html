@@ -289,7 +289,10 @@
                     const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
                     result += asciiChars[charIndex];
                 }
-                result += '\n';
+                // Add newline except for the last line
+                if (y + skipY < height) {
+                    result += '\n';
+                }
             }
             
             asciiOutput.textContent = result;
@@ -334,7 +337,10 @@
             
             // Draw the ASCII characters
             lines.forEach((line, i) => {
-                downloadCtx.fillText(line, 0, i * charHeight);
+                // Only draw non-empty lines
+                if (line.trim().length > 0) {
+                    downloadCtx.fillText(line, 0, i * charHeight);
+                }
             });
             
             // Create and trigger download
