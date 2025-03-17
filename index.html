@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCIICam</title>
+    <title>ASCIICAM</title>
     <style>
         * {
             margin: 0;
@@ -56,13 +56,13 @@
             display: none;
         }
         
-        .bottom-bar {
+        .top-bar {
             height: 60px;
             background-color: #000;
             display: flex;
             justify-content: center;
             align-items: center;
-            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
             z-index: 10;
         }
         
@@ -73,22 +73,9 @@
             color: #fff;
         }
         
-        .title-bar {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            text-align: center;
-            font-family: 'Courier New', monospace;
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff;
-            z-index: 50;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        }
-        
         .capture-btn {
             position: absolute;
-            bottom: 80px;
+            bottom: 20px;
             right: 20px;
             background-color: #fff;
             color: #000;
@@ -101,13 +88,13 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
             z-index: 100;
         }
         
         .camera-btn {
             position: absolute;
-            bottom: 80px;
+            bottom: 20px;
             left: 20px;
             background-color: #fff;
             color: #000;
@@ -120,7 +107,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
             z-index: 100;
         }
         
@@ -131,14 +118,14 @@
             }
             
             .capture-btn {
-                bottom: 80px;
+                bottom: 40px;
                 right: 40px;
                 width: 70px;
                 height: 70px;
             }
             
             .camera-btn {
-                bottom: 80px;
+                bottom: 40px;
                 left: 40px;
                 width: 70px;
                 height: 70px;
@@ -166,6 +153,9 @@
     </style>
 </head>
 <body>
+    <div class="top-bar">
+        <div class="title">ASCIICAM</div>
+    </div>
     <div id="main-container">
         <div id="ascii-container">
             <pre id="ascii-output"></pre>
@@ -186,14 +176,10 @@
         <div id="error-message"></div>
         <div class="flash" id="flash"></div>
     </div>
-    <div class="bottom-bar">
-        <div class="title">ASCIICam</div>
-    </div>
-    <div class="title-bar">ASCIICam</div>
 
     <script>
-        // ASCII characters from light to dark (inverted)
-        const asciiChars = ['@', '8', '%', '#', 'a', 'o', '=', '+', '~', '-', ',', '.', ' '];
+        // ASCII characters from dark to light (proper order for dark theme)
+        const asciiChars = [' ', '.', ',', '-', '~', '+', '=', 'o', 'a', '#', '%', '8', '@'];
         
         // DOM Elements
         const video = document.getElementById('video');
