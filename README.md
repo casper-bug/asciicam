@@ -1,2 +1,2 @@
 ASCIICam 
-ASCIICam is a simple HTML and JS based project that was made with help of GPT.
+ASCIICam is a simple HTML and JS based project that was made with help of CLAUDE Sonnet 3.7
