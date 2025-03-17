@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCII Camera</title>
+    <title>ASCIICam</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -20,15 +20,20 @@
         }
         pre { 
             font-size: 8px; 
-            line-height: 8px; 
-            white-space: pre-wrap; 
-            word-break: break-word; 
+            line-height: 1.2;
+            white-space: pre; 
+            overflow: hidden;
             flex-grow: 1;
             text-align: center;
             width: 100%;
             padding: 10px;
         }
-        video { display: none; }
+        video { 
+            display: none; 
+        }
+        canvas#captureCanvas { 
+            display: none; 
+        }
         .bottom-bar {
             background: #222;
             padding: 12px;
@@ -37,6 +42,7 @@
             justify-content: space-between;
             align-items: center;
             border-radius: 8px;
+            margin-top: 10px;
         }
         .bottom-bar span {
             flex: 1;
@@ -57,15 +63,43 @@
         .bottom-bar button:hover {
             background: #ddd;
         }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            pre {
+                font-size: 5px;
+                line-height: 1;
+            }
+            .bottom-bar span {
+                font-size: 14px;
+            }
+            .bottom-bar button {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+        /* For larger screens */
+        @media (min-width: 1200px) {
+            pre {
+                font-size: 10px;
+                line-height: 1.2;
+            }
+        }
     </style>
 </head>
 <body>
-    <video id="video" autoplay></video>
+    <video id="video" autoplay playsinline></video>
     <pre id="ascii"></pre>
 
     <div class="bottom-bar">
         <span>ASCIICam</span>
-        <button onclick="captureAscii()">Capture & Download</button>
+        <div class="controls">
+            <button id="switchCamera" style="display: none;">Switch Camera</button>
+            <button id="captureBtn">Capture & Download</button>
+        </div>
     </div>
 
     <canvas id="captureCanvas"></canvas>
