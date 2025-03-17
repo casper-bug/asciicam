@@ -1,5 +1,4 @@
 # ASCIICAM 
-![My Project Logo](logo.jpg)
 ASCIICam is a web application that transforms your camera feed into real-time ASCII art. It converts video input into text characters, creating a unique visual experience reminiscent of early computer art.
 
 ## Features
