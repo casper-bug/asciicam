@@ -39,8 +39,8 @@
         
         #ascii-output {
             font-family: 'Courier New', monospace;
-            font-size: 6px;
-            line-height: 0.8;
+            font-size: 10px;
+            line-height: 0.85;
             letter-spacing: 0;
             white-space: pre;
             color: #fff;
@@ -59,34 +59,26 @@
         
         .title {
             position: absolute;
-            top: 15px;
-            left: 15px;
+            top: 20px;
+            left: 20px;
             font-family: 'Courier New', monospace;
-            font-size: 18px;
+            font-size: 24px;
             font-weight: bold;
             color: #fff;
             z-index: 200;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
         }
         
-        @media (min-width: 768px) {
-            .title {
-                font-size: 24px;
-                top: 20px;
-                left: 20px;
-            }
-        }
-        
         .capture-btn {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 30px;
+            right: 30px;
             background-color: #fff;
             color: #000;
             border: none;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
@@ -98,14 +90,14 @@
         
         .camera-btn {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
+            bottom: 30px;
+            left: 30px;
             background-color: #fff;
             color: #000;
             border: none;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
@@ -117,7 +109,7 @@
 
         .resolution-btn {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             background-color: #fff;
@@ -132,27 +124,6 @@
             align-items: center;
             box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
             z-index: 100;
-        }
-        
-        @media (min-width: 768px) {
-            #ascii-output {
-                font-size: 10px;
-                line-height: 0.85;
-            }
-            
-            .capture-btn {
-                bottom: 30px;
-                right: 30px;
-                width: 70px;
-                height: 70px;
-            }
-            
-            .camera-btn {
-                bottom: 30px;
-                left: 30px;
-                width: 70px;
-                height: 70px;
-            }
         }
         
         #error-message {
@@ -202,10 +173,8 @@
     </div>
 
     <script>
-        // ASCII characters from dark to light (proper order for dark theme)
         const asciiChars = [' ', '.', ',', '-', '~', '+', '=', 'o', 'a', '#', '%', '8', '@'];
         
-        // DOM Elements
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const asciiOutput = document.getElementById('ascii-output');
@@ -221,40 +190,33 @@
         let streaming = false;
         let width = window.innerWidth;
         let height = window.innerHeight;
-        let videoAspectRatio = 4/3; // Default until we get actual ratio
+        let videoAspectRatio = 4/3;
         
-        // Resolution modes
         const resolutionModes = [
             { name: "Low", factor: 12, fontSize: 6 },
             { name: "Medium", factor: 8, fontSize: 8 },
             { name: "High", factor: 6, fontSize: 10 },
             { name: "Ultra", factor: 4, fontSize: 12 }
         ];
-        let currentResolutionMode = 1; // Start with Medium
+        let currentResolutionMode = 1;
         
         let asciiWidth, asciiHeight;
-        let facingMode = "user"; // Start with front camera
+        let facingMode = "user";
         
-        // Update ASCII dimensions based on current resolution mode
         function updateASCIIDimensions() {
             const mode = resolutionModes[currentResolutionMode];
             
-            // Calculate ASCII dimensions
             asciiWidth = Math.floor(width / mode.factor);
             const calculatedHeight = Math.floor(asciiWidth / videoAspectRatio);
             
-            // Set font size
             asciiOutput.style.fontSize = `${mode.fontSize}px`;
             
-            // Update resolution button text
             resolutionBtn.textContent = `Resolution: ${mode.name}`;
             
             return calculatedHeight;
         }
         
-        // Initialize camera with current camera selection
         function initCamera() {
-            // Stop any existing stream
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
             }
@@ -278,22 +240,18 @@
             });
         }
         
-        // Switch camera between front and back
         cameraBtn.addEventListener('click', () => {
             facingMode = facingMode === "user" ? "environment" : "user";
             initCamera();
         });
         
-        // Switch resolution mode
         resolutionBtn.addEventListener('click', () => {
             currentResolutionMode = (currentResolutionMode + 1) % resolutionModes.length;
             updateASCIIDimensions();
         });
         
-        // When video metadata is loaded, set up dimensions
         video.addEventListener('canplay', function() {
             if (!streaming) {
-                // Get video dimensions
                 videoAspectRatio = video.videoWidth / video.videoHeight;
                 height = video.videoHeight / (video.videoWidth / width);
                 
@@ -310,15 +268,12 @@
                 
                 streaming = true;
                 
-                // Start the ASCII conversion
                 convertToAscii();
             }
         }, false);
         
-        // Convert video frame to ASCII
         function convertToAscii() {
             if (!streaming || document.visibilityState !== 'visible') {
-                // If page is not visible but we want to keep the connection alive
                 requestAnimationFrame(convertToAscii);
                 return;
             }
@@ -327,19 +282,15 @@
             const imageData = ctx.getImageData(0, 0, width, height);
             const data = imageData.data;
             
-            // Get current resolution settings
             const mode = resolutionModes[currentResolutionMode];
             
-            // Calculate proportional height based on video aspect ratio
             const calculatedHeight = Math.floor(asciiWidth / videoAspectRatio);
             
-            // Skip pixels to match resolution
             const skipX = Math.ceil(width / asciiWidth);
             const skipY = Math.ceil(height / calculatedHeight);
             
             let result = '';
             
-            // Calculate how many rows we'll actually have
             const rowCount = Math.floor(height / skipY);
             let currentRow = 0;
             
@@ -348,21 +299,17 @@
                 for (let x = 0; x < width; x += skipX) {
                     const idx = (Math.floor(y) * width + Math.floor(x)) * 4;
                     
-                    // Make sure we're not accessing out of bounds data
                     if (idx >= data.length - 4) continue;
                     
-                    // Calculate grayscale value - weighted for human perception
                     const r = data[idx] || 0;
                     const g = data[idx + 1] || 0;
                     const b = data[idx + 2] || 0;
                     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
                     
-                    // Map grayscale to ASCII character
                     const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
                     result += asciiChars[charIndex] || ' ';
                 }
                 
-                // Add newline except for the last line
                 if (currentRow < rowCount) {
                     result += '\n';
                 }
@@ -370,28 +317,22 @@
             
             asciiOutput.textContent = result;
             
-            // Call the next frame
             requestAnimationFrame(convertToAscii);
         }
         
-        // Capture and download current ASCII view
         captureBtn.addEventListener('click', function() {
-            // Flash effect
             flash.style.opacity = "0.7";
             setTimeout(() => {
                 flash.style.opacity = "0";
             }, 100);
             
-            // Create a new canvas for the ASCII art as an image
             const downloadCanvas = document.createElement('canvas');
             const downloadCtx = downloadCanvas.getContext('2d');
             
-            // Set the size based on the ASCII content
             const lines = asciiOutput.textContent.split('\n');
             const lineCount = lines.length;
             const lineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
             
-            // Use a higher resolution for the download image that matches what's on screen
             const computedStyle = window.getComputedStyle(asciiOutput);
             const fontSize = parseFloat(computedStyle.fontSize);
             const charWidth = fontSize * 0.6;
@@ -399,31 +340,25 @@
             downloadCanvas.width = lineLength * charWidth;
             downloadCanvas.height = lineCount * charHeight;
             
-            // Fill with black background
             downloadCtx.fillStyle = '#000';
             downloadCtx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
             
-            // Set text properties
             downloadCtx.font = `${charHeight}px 'Courier New', monospace`;
             downloadCtx.fillStyle = '#fff';
             downloadCtx.textBaseline = 'top';
             
-            // Draw the ASCII characters - keep track of actual lines drawn
             let actualLineCount = 0;
             lines.forEach((line, i) => {
-                // Only draw non-empty lines and check for undefined
                 if (line && line !== "undefined" && line.trim().length > 0) {
                     downloadCtx.fillText(line, 0, actualLineCount * charHeight);
                     actualLineCount++;
                 }
             });
             
-            // Adjust canvas height to match actual content
             if (actualLineCount < lineCount) {
                 downloadCanvas.height = actualLineCount * charHeight;
             }
             
-            // Create and trigger download
             const dataUrl = downloadCanvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = dataUrl;
@@ -433,32 +368,25 @@
             document.body.removeChild(link);
         });
         
-        // Handle window resize
         window.addEventListener('resize', function() {
             width = window.innerWidth;
             height = window.innerHeight;
             
-            // Update dimensions for video and canvas
             video.setAttribute('width', width);
             video.setAttribute('height', height);
             canvas.setAttribute('width', width);
             canvas.setAttribute('height', height);
             
-            // Update ASCII dimensions
             updateASCIIDimensions();
         });
         
-        // Handle visibility change (for tab switching)
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'visible' && streaming) {
-                // Restart conversion when tab becomes visible again
                 convertToAscii();
             }
         });
         
-        // Start with initialization
         initCamera();
     </script>
 </body>
 </html>
-            
