@@ -56,21 +56,24 @@
             display: none;
         }
         
-        .top-bar {
-            height: 60px;
-            background-color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            z-index: 10;
-        }
-        
         .title {
+            position: absolute;
+            top: 15px;
+            left: 15px;
             font-family: 'Courier New', monospace;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
             color: #fff;
+            z-index: 200;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        @media (min-width: 768px) {
+            .title {
+                font-size: 24px;
+                top: 20px;
+                left: 20px;
+            }
         }
         
         .capture-btn {
@@ -153,9 +156,7 @@
     </style>
 </head>
 <body>
-    <div class="top-bar">
-        <div class="title">ASCIICAM</div>
-    </div>
+    <div class="title">ASCIICAM</div>
     <div id="main-container">
         <div id="ascii-container">
             <pre id="ascii-output"></pre>
