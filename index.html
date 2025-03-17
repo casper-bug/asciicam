@@ -257,7 +257,11 @@
         
         // Convert video frame to ASCII
         function convertToAscii() {
-            if (!streaming) return;
+            if (!streaming || document.visibilityState !== 'visible') {
+                // If page is not visible but we want to keep the connection alive
+                requestAnimationFrame(convertToAscii);
+                return;
+            }
             
             ctx.drawImage(video, 0, 0, width, height);
             const imageData = ctx.getImageData(0, 0, width, height);
@@ -275,22 +279,31 @@
             
             let result = '';
             
+            // Calculate how many rows we'll actually have
+            const rowCount = Math.floor(height / skipY);
+            let currentRow = 0;
+            
             for (let y = 0; y < height; y += skipY) {
+                currentRow++;
                 for (let x = 0; x < width; x += skipX) {
                     const idx = (y * width + x) * 4;
                     
+                    // Make sure we're not accessing out of bounds data
+                    if (idx >= data.length - 4) continue;
+                    
                     // Calculate grayscale value - weighted for human perception
-                    const r = data[idx];
-                    const g = data[idx + 1];
-                    const b = data[idx + 2];
+                    const r = data[idx] || 0;
+                    const g = data[idx + 1] || 0;
+                    const b = data[idx + 2] || 0;
                     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
                     
                     // Map grayscale to ASCII character
                     const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
-                    result += asciiChars[charIndex];
+                    result += asciiChars[charIndex] || ' ';
                 }
+                
                 // Add newline except for the last line
-                if (y + skipY < height) {
+                if (currentRow < rowCount) {
                     result += '\n';
                 }
             }
@@ -335,13 +348,20 @@
             downloadCtx.fillStyle = '#fff';
             downloadCtx.textBaseline = 'top';
             
-            // Draw the ASCII characters
+            // Draw the ASCII characters - keep track of actual lines drawn
+            let actualLineCount = 0;
             lines.forEach((line, i) => {
-                // Only draw non-empty lines
-                if (line.trim().length > 0) {
-                    downloadCtx.fillText(line, 0, i * charHeight);
+                // Only draw non-empty lines and check for undefined
+                if (line && line !== "undefined" && line.trim().length > 0) {
+                    downloadCtx.fillText(line, 0, actualLineCount * charHeight);
+                    actualLineCount++;
                 }
             });
+            
+            // Adjust canvas height to match actual content
+            if (actualLineCount < lineCount) {
+                downloadCanvas.height = actualLineCount * charHeight;
+            }
             
             // Create and trigger download
             const dataUrl = downloadCanvas.toDataURL('image/png');
@@ -373,6 +393,16 @@
                 asciiHeight = Math.floor(height / 10);
             }
         }, false);
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                // Page is now visible, reinitialize camera if it was stopped
+                if (!streaming) {
+                    initCamera();
+                }
+            }
+        });
         
         // Initialize camera on page load
         initCamera();
