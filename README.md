@@ -9,6 +9,7 @@ ASCIICam is a web application that transforms your camera feed into real-time AS
 - **Screenshot Capability**: Capture and save your ASCII art creations as PNG images
 - **Responsive Design**: Works on both mobile and desktop devices
 - **Dark Mode**: Sleek black background with white text for optimal contrast
+- **Convert from Gallery**:Choose any image from gallery and covert it into ASCII 
 
 ## How It Works
 
