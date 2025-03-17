@@ -13,13 +13,13 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).th
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-// ASCII characters from darkest to lightest for improved visibility
-const asciiChars = "@%#WMBX&8O0QZ*o+=-:. ";
+// Inverted ASCII characters (lightest to darkest)
+const asciiChars = " .:-=+*#%@";
 
 function processVideo() {
     function render() {
-        const width = Math.floor(window.innerWidth / 5);  // Increased resolution
-        const height = Math.floor(window.innerHeight / 10);
+        const width = 80; // Increased width for better detail
+        const height = 40; // Increased height for better clarity
         canvas.width = width;
         canvas.height = height;
 
@@ -28,8 +28,8 @@ function processVideo() {
 
         let asciiImage = "";
         for (let i = 0; i < imageData.length; i += 4) {
-            const brightness = (imageData[i] * 0.3 + imageData[i + 1] * 0.59 + imageData[i + 2] * 0.11); // Better grayscale conversion
-            const charIndex = Math.floor((brightness / 255) * (asciiChars.length - 1));
+            const brightness = (imageData[i] * 0.3 + imageData[i + 1] * 0.59 + imageData[i + 2] * 0.11);
+            const charIndex = asciiChars.length - 1 - Math.floor((brightness / 255) * (asciiChars.length - 1)); // Inverted mapping
             asciiImage += asciiChars[charIndex] + " ";
             if ((i / 4) % width === width - 1) asciiImage += "\n";
         }
@@ -49,13 +49,13 @@ function captureAscii() {
     // Set canvas size for better scaling
     const fontSize = 14;
     const lineHeight = fontSize * 1.2;
-    captureCanvas.width = window.innerWidth - 40;  // Adjust for margin
+    captureCanvas.width = window.innerWidth - 40;
     captureCanvas.height = lines.length * lineHeight;
     
     // Draw ASCII text on canvas
-    captureCtx.fillStyle = "white";
+    captureCtx.fillStyle = "black"; // Inverted background
     captureCtx.fillRect(0, 0, captureCanvas.width, captureCanvas.height);
-    captureCtx.fillStyle = "black";
+    captureCtx.fillStyle = "white"; // Inverted text color
     captureCtx.font = `${fontSize}px monospace`;
     
     lines.forEach((line, index) => {
