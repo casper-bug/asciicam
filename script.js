@@ -13,13 +13,13 @@ navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 
-// ASCII characters from dark to light (for better contrast)
-const asciiChars = "@%#*+=-:. ";
+// ASCII characters from darkest to lightest for improved visibility
+const asciiChars = "@%#WMBX&8O0QZ*o+=-:. ";
 
 function processVideo() {
     function render() {
-        const width = Math.floor(window.innerWidth / 10); // Adjust resolution dynamically
-        const height = Math.floor(window.innerHeight / 20);
+        const width = Math.floor(window.innerWidth / 6);  // Increased resolution
+        const height = Math.floor(window.innerHeight / 12);
         canvas.width = width;
         canvas.height = height;
 
@@ -28,7 +28,7 @@ function processVideo() {
 
         let asciiImage = "";
         for (let i = 0; i < imageData.length; i += 4) {
-            const brightness = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+            const brightness = (imageData[i] * 0.3 + imageData[i + 1] * 0.59 + imageData[i + 2] * 0.11); // Better grayscale conversion
             const charIndex = Math.floor((brightness / 255) * (asciiChars.length - 1));
             asciiImage += asciiChars[charIndex] + " ";
             if ((i / 4) % width === width - 1) asciiImage += "\n";
@@ -46,10 +46,10 @@ function captureAscii() {
     const text = asciiContainer.textContent;
     const lines = text.split("\n");
     
-    // Set canvas size
-    const fontSize = 12;
-    const lineHeight = fontSize;
-    captureCanvas.width = window.innerWidth;
+    // Set canvas size for better scaling
+    const fontSize = 14;
+    const lineHeight = fontSize * 1.2;
+    captureCanvas.width = window.innerWidth - 40;  // Adjust for margin
     captureCanvas.height = lines.length * lineHeight;
     
     // Draw ASCII text on canvas
