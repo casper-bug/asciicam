@@ -10,47 +10,49 @@
             background: black; 
             color: white; 
             font-family: monospace; 
-            text-align: center; 
-            overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             height: 100vh;
+            padding: 20px;
+            text-align: center;
+            overflow: hidden;
         }
         pre { 
-            font-size: 8px; 
-            line-height: 8px; 
+            font-size: 10px; 
+            line-height: 10px; 
             white-space: pre-wrap; 
             word-break: break-word; 
-            text-align: center;
             flex-grow: 1;
-            padding: 10px;
+            text-align: center;
         }
         video, canvas { display: none; }
         .bottom-bar {
             background: #222;
-            padding: 10px;
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 2px;
+            padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-radius: 8px;
         }
         .bottom-bar span {
             flex: 1;
+            font-size: 18px;
+            font-weight: bold;
             text-align: center;
         }
         .bottom-bar button {
             padding: 10px 15px;
             font-size: 14px;
             cursor: pointer;
-            border: none;
+            border: 2px solid black;
             background: white;
             color: black;
             font-weight: bold;
             border-radius: 5px;
+        }
+        .bottom-bar button:hover {
+            background: #ddd;
         }
     </style>
 </head>
