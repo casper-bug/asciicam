@@ -4,7 +4,7 @@ const captureCanvas = document.getElementById('captureCanvas');
 const captureCtx = captureCanvas.getContext('2d');
 
 // Start the camera
-navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then((stream) => {
     video.srcObject = stream;
     video.play();
     processVideo();
@@ -18,8 +18,8 @@ const asciiChars = "@%#WMBX&8O0QZ*o+=-:. ";
 
 function processVideo() {
     function render() {
-        const width = Math.floor(window.innerWidth / 6);  // Increased resolution
-        const height = Math.floor(window.innerHeight / 12);
+        const width = Math.floor(window.innerWidth / 5);  // Increased resolution
+        const height = Math.floor(window.innerHeight / 10);
         canvas.width = width;
         canvas.height = height;
 
