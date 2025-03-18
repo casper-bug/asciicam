@@ -76,29 +76,18 @@
             }
         }
         
-        .capture-btn {
+        .controls {
             position: fixed;
             bottom: 20px;
-            right: 20px;
-            background-color: #fff;
-            color: #000;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-weight: bold;
-            cursor: pointer;
+            left: 0;
+            right: 0;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+            justify-content: space-around;
+            padding: 0 20px;
             z-index: 100;
         }
         
-        .camera-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
+        .control-btn {
             background-color: #fff;
             color: #000;
             border: none;
@@ -111,7 +100,10 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
-            z-index: 100;
+        }
+        
+        #file-input {
+            display: none;
         }
         
         @media (min-width: 768px) {
@@ -120,16 +112,7 @@
                 line-height: 0.85;
             }
             
-            .capture-btn {
-                bottom: 30px;
-                right: 30px;
-                width: 70px;
-                height: 70px;
-            }
-            
-            .camera-btn {
-                bottom: 30px;
-                left: 30px;
+            .control-btn {
                 width: 70px;
                 height: 70px;
             }
@@ -153,27 +136,65 @@
             z-index: 1000;
             pointer-events: none;
         }
+        
+        .image-preview {
+            display: none;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .mode-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #fff;
+            z-index: 200;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+        
+        @media (min-width: 768px) {
+            .mode-indicator {
+                font-size: 16px;
+                top: 20px;
+                right: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="title">ASCIICAM</div>
+    <div class="mode-indicator" id="mode-indicator">CAMERA MODE</div>
     <div id="main-container">
         <div id="ascii-container">
             <pre id="ascii-output"></pre>
         </div>
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas"></canvas>
-        <button class="capture-btn" id="capture-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-        </button>
-        <button class="camera-btn" id="camera-btn">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 16v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path>
-            </svg>
-        </button>
+        <img id="image-preview" class="image-preview" />
+        <div class="controls">
+            <button class="control-btn" id="camera-btn" title="Switch Camera">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 16v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path>
+                </svg>
+            </button>
+            <button class="control-btn" id="gallery-btn" title="Select Image">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+            </button>
+            <input type="file" id="file-input" accept="image/*">
+            <button class="control-btn" id="capture-btn" title="Capture">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+            </button>
+        </div>
         <div id="error-message"></div>
         <div class="flash" id="flash"></div>
     </div>
@@ -188,8 +209,12 @@
         const asciiOutput = document.getElementById('ascii-output');
         const captureBtn = document.getElementById('capture-btn');
         const cameraBtn = document.getElementById('camera-btn');
+        const galleryBtn = document.getElementById('gallery-btn');
+        const fileInput = document.getElementById('file-input');
+        const imagePreview = document.getElementById('image-preview');
         const errorMessage = document.getElementById('error-message');
         const flash = document.getElementById('flash');
+        const modeIndicator = document.getElementById('mode-indicator');
         
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
@@ -199,6 +224,8 @@
         let asciiWidth = Math.floor(width / 6);
         let asciiHeight = 0;
         let facingMode = "user"; // Start with front camera
+        let currentMode = "camera"; // Either "camera" or "image"
+        let animationFrameId = null;
         
         // Initialize camera with current camera selection
         function initCamera() {
@@ -206,6 +233,11 @@
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
             }
+            
+            // Update UI
+            currentMode = "camera";
+            modeIndicator.textContent = "CAMERA MODE";
+            imagePreview.style.display = "none";
             
             navigator.mediaDevices.getUserMedia({
                 video: {
@@ -228,8 +260,90 @@
         
         // Switch camera between front and back
         cameraBtn.addEventListener('click', () => {
-            facingMode = facingMode === "user" ? "environment" : "user";
-            initCamera();
+            if (currentMode === "image") {
+                // Switch from image mode to camera mode
+                initCamera();
+            } else {
+                // Toggle camera direction
+                facingMode = facingMode === "user" ? "environment" : "user";
+                initCamera();
+            }
+        });
+        
+        // Open file picker
+        galleryBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Handle selected file
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                // Stop video stream if active
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                }
+                
+                // Cancel any animation frames
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                }
+                
+                // Set mode to image
+                currentMode = "image";
+                modeIndicator.textContent = "IMAGE MODE";
+                
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = (event) => {
+                    // Create a new image element
+                    const img = new Image();
+                    img.onload = () => {
+                        // Set canvas dimensions to match the image
+                        width = img.width;
+                        height = img.height;
+                        
+                        // Calculate appropriate canvas size
+                        const maxWidth = window.innerWidth;
+                        const maxHeight = window.innerHeight;
+                        
+                        let newWidth = width;
+                        let newHeight = height;
+                        
+                        // Scale down if image is larger than viewport
+                        if (width > maxWidth || height > maxHeight) {
+                            const ratioWidth = maxWidth / width;
+                            const ratioHeight = maxHeight / height;
+                            const ratio = Math.min(ratioWidth, ratioHeight);
+                            
+                            newWidth = width * ratio;
+                            newHeight = height * ratio;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        // Draw image to canvas
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Calculate ASCII dimensions
+                        asciiWidth = Math.floor(newWidth / 6);
+                        asciiHeight = Math.floor(newHeight / 10);
+                        
+                        // Convert to ASCII
+                        convertImageToAscii();
+                        
+                        // Automatically download the ASCII art
+                        setTimeout(() => {
+                            downloadAscii();
+                        }, 500);
+                    };
+                    
+                    img.src = event.target.result;
+                };
+                
+                reader.readAsDataURL(file);
+            }
         });
         
         // When video metadata is loaded, set up dimensions
@@ -257,7 +371,7 @@
         
         // Convert video frame to ASCII
         function convertToAscii() {
-            if (!streaming) return;
+            if (!streaming || currentMode !== "camera") return;
             
             ctx.drawImage(video, 0, 0, width, height);
             const imageData = ctx.getImageData(0, 0, width, height);
@@ -298,11 +412,54 @@
             asciiOutput.textContent = result;
             
             // Call the next frame
-            requestAnimationFrame(convertToAscii);
+            animationFrameId = requestAnimationFrame(convertToAscii);
+        }
+        
+        // Convert static image to ASCII
+        function convertImageToAscii() {
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+            
+            // Calculate aspect ratio and resolution
+            const aspectRatio = width / height;
+            // Calculate a good ASCII resolution based on image dimensions
+            // Typical character is approximately 0.5:1 width:height ratio in monospace font
+            asciiWidth = Math.min(200, Math.floor(width / 5)); // Limit to reasonable width
+            const calculatedHeight = Math.floor(asciiWidth / (aspectRatio * 0.5));
+            
+            // Skip pixels to match resolution
+            const skipX = Math.floor(width / asciiWidth);
+            const skipY = Math.floor(height / calculatedHeight);
+            
+            let result = '';
+            
+            for (let y = 0; y < height; y += skipY) {
+                for (let x = 0; x < width; x += skipX) {
+                    const idx = (y * width + x) * 4;
+                    
+                    // Calculate grayscale value - weighted for human perception
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                    
+                    // Map grayscale to ASCII character
+                    const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
+                    result += asciiChars[charIndex];
+                }
+                // Add newline except for the last line
+                if (y + skipY < height) {
+                    result += '\n';
+                }
+            }
+            
+            asciiOutput.textContent = result;
         }
         
         // Capture and download current ASCII view
-        captureBtn.addEventListener('click', function() {
+        captureBtn.addEventListener('click', downloadAscii);
+        
+        function downloadAscii() {
             // Flash effect
             flash.style.opacity = "0.7";
             setTimeout(() => {
@@ -347,18 +504,21 @@
             const dataUrl = downloadCanvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = 'asciicam_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
+            
+            // Get the current date for the filename
+            let fileNamePrefix = currentMode === "camera" ? "asciicam" : "asciiimage";
+            link.download = fileNamePrefix + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
+            
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        });
-        
+        }  
         // Handle window resize
         window.addEventListener('resize', function() {
             width = window.innerWidth;
             asciiWidth = Math.floor(width / 6);
             
-            if (streaming) {
+            if (streaming && currentMode === "camera") {
                 height = video.videoHeight / (video.videoWidth / width);
                 
                 if (isNaN(height)) {
@@ -371,6 +531,11 @@
                 canvas.setAttribute('height', height);
                 
                 asciiHeight = Math.floor(height / 10);
+            }
+            
+            // If in image mode, re-convert the current image
+            if (currentMode === "image") {
+                convertImageToAscii();
             }
         }, false);
         
