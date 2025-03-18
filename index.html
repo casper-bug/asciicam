@@ -143,30 +143,10 @@
             max-height: 100%;
             object-fit: contain;
         }
-        
-        .mode-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #fff;
-            z-index: 200;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-        }
-        
-        @media (min-width: 768px) {
-            .mode-indicator {
-                font-size: 16px;
-                top: 20px;
-                right: 20px;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="title">ASCIICAM</div>
-    <div class="mode-indicator" id="mode-indicator">CAMERA MODE</div>
     <div id="main-container">
         <div id="ascii-container">
             <pre id="ascii-output"></pre>
@@ -200,10 +180,7 @@
     </div>
 
     <script>
-        // ASCII characters from dark to light (proper order for dark theme)
         const asciiChars = [' ', '.', ',', '-', '~', '+', '=', 'o', 'a', '#', '%', '8', '@'];
-        
-        // DOM Elements
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const asciiOutput = document.getElementById('ascii-output');
@@ -214,7 +191,6 @@
         const imagePreview = document.getElementById('image-preview');
         const errorMessage = document.getElementById('error-message');
         const flash = document.getElementById('flash');
-        const modeIndicator = document.getElementById('mode-indicator');
         
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
@@ -223,20 +199,16 @@
         let height = 0;
         let asciiWidth = Math.floor(width / 6);
         let asciiHeight = 0;
-        let facingMode = "user"; // Start with front camera
-        let currentMode = "camera"; // Either "camera" or "image"
+        let facingMode = "user";
+        let currentMode = "camera";
         let animationFrameId = null;
         
-        // Initialize camera with current camera selection
         function initCamera() {
-            // Stop any existing stream
             if (video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
             }
             
-            // Update UI
             currentMode = "camera";
-            modeIndicator.textContent = "CAMERA MODE";
             imagePreview.style.display = "none";
             
             navigator.mediaDevices.getUserMedia({
@@ -258,59 +230,46 @@
             });
         }
         
-        // Switch camera between front and back
         cameraBtn.addEventListener('click', () => {
             if (currentMode === "image") {
-                // Switch from image mode to camera mode
                 initCamera();
             } else {
-                // Toggle camera direction
                 facingMode = facingMode === "user" ? "environment" : "user";
                 initCamera();
             }
         });
         
-        // Open file picker
         galleryBtn.addEventListener('click', () => {
             fileInput.click();
         });
         
-        // Handle selected file
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
-                // Stop video stream if active
                 if (video.srcObject) {
                     video.srcObject.getTracks().forEach(track => track.stop());
                 }
                 
-                // Cancel any animation frames
                 if (animationFrameId) {
                     cancelAnimationFrame(animationFrameId);
                 }
                 
-                // Set mode to image
                 currentMode = "image";
-                modeIndicator.textContent = "IMAGE MODE";
                 
                 const file = e.target.files[0];
                 const reader = new FileReader();
                 
                 reader.onload = (event) => {
-                    // Create a new image element
                     const img = new Image();
                     img.onload = () => {
-                        // Set canvas dimensions to match the image
                         width = img.width;
                         height = img.height;
                         
-                        // Calculate appropriate canvas size
                         const maxWidth = window.innerWidth;
                         const maxHeight = window.innerHeight;
                         
                         let newWidth = width;
                         let newHeight = height;
                         
-                        // Scale down if image is larger than viewport
                         if (width > maxWidth || height > maxHeight) {
                             const ratioWidth = maxWidth / width;
                             const ratioHeight = maxHeight / height;
@@ -323,17 +282,15 @@
                         canvas.width = width;
                         canvas.height = height;
                         
-                        // Draw image to canvas
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Calculate ASCII dimensions
+                        // Ensure proper aspect ratio
+                        const aspectRatio = width / height;
                         asciiWidth = Math.floor(newWidth / 6);
-                        asciiHeight = Math.floor(newHeight / 10);
+                        asciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
                         
-                        // Convert to ASCII
                         convertImageToAscii();
                         
-                        // Automatically download the ASCII art
                         setTimeout(() => {
                             downloadAscii();
                         }, 500);
@@ -346,7 +303,6 @@
             }
         });
         
-        // When video metadata is loaded, set up dimensions
         video.addEventListener('canplay', function() {
             if (!streaming) {
                 height = video.videoHeight / (video.videoWidth / width);
@@ -360,16 +316,15 @@
                 canvas.setAttribute('width', width);
                 canvas.setAttribute('height', height);
                 
-                asciiHeight = Math.floor(height / 10);
+                // Properly calculate ascii height based on aspect ratio
+                const aspectRatio = width / height;
+                asciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
                 
                 streaming = true;
-                
-                // Start the ASCII conversion
                 convertToAscii();
             }
         }, false);
         
-        // Convert video frame to ASCII
         function convertToAscii() {
             if (!streaming || currentMode !== "camera") return;
             
@@ -377,57 +332,42 @@
             const imageData = ctx.getImageData(0, 0, width, height);
             const data = imageData.data;
             
-            // Calculate aspect ratio and resolution
             const aspectRatio = width / height;
-            const calculatedHeight = Math.floor(asciiWidth / aspectRatio);
-            const finalAsciiHeight = Math.min(calculatedHeight, asciiHeight);
+            // Fix aspect ratio problems by calculating proper height
+            const calculatedAsciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
             
-            // Skip pixels to match resolution
-            // Use smaller skip values to increase detail
-            const skipX = Math.max(1, Math.floor(width / (asciiWidth * 2)));
-            const skipY = Math.max(1, Math.floor(height / (finalAsciiHeight * 2)));
+            const skipX = Math.max(1, Math.floor(width / asciiWidth));
+            const skipY = Math.max(1, Math.floor(height / calculatedAsciiHeight));
             
             let result = '';
             
             for (let y = 0; y < height; y += skipY) {
                 for (let x = 0; x < width; x += skipX) {
                     const idx = (y * width + x) * 4;
-                    
-                    // Calculate grayscale value - weighted for human perception
                     const r = data[idx];
                     const g = data[idx + 1];
                     const b = data[idx + 2];
                     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    
-                    // Map grayscale to ASCII character
                     const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
                     result += asciiChars[charIndex];
                 }
-                // Add newline except for the last line
                 if (y + skipY < height) {
                     result += '\n';
                 }
             }
             
             asciiOutput.textContent = result;
-            
-            // Call the next frame
             animationFrameId = requestAnimationFrame(convertToAscii);
         }
         
-        // Convert static image to ASCII
         function convertImageToAscii() {
             const imageData = ctx.getImageData(0, 0, width, height);
             const data = imageData.data;
             
-            // Calculate aspect ratio and resolution
             const aspectRatio = width / height;
-            // Calculate a good ASCII resolution based on image dimensions
-            // Typical character is approximately 0.5:1 width:height ratio in monospace font
-            asciiWidth = Math.min(200, Math.floor(width / 5)); // Limit to reasonable width
+            // Fix aspect ratio by using proper character width-to-height ratio (~0.5)
             const calculatedHeight = Math.floor(asciiWidth / (aspectRatio * 0.5));
             
-            // Skip pixels to match resolution
             const skipX = Math.floor(width / asciiWidth);
             const skipY = Math.floor(height / calculatedHeight);
             
@@ -436,18 +376,13 @@
             for (let y = 0; y < height; y += skipY) {
                 for (let x = 0; x < width; x += skipX) {
                     const idx = (y * width + x) * 4;
-                    
-                    // Calculate grayscale value - weighted for human perception
                     const r = data[idx];
                     const g = data[idx + 1];
                     const b = data[idx + 2];
                     const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    
-                    // Map grayscale to ASCII character
                     const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
                     result += asciiChars[charIndex];
                 }
-                // Add newline except for the last line
                 if (y + skipY < height) {
                     result += '\n';
                 }
@@ -456,26 +391,21 @@
             asciiOutput.textContent = result;
         }
         
-        // Capture and download current ASCII view
         captureBtn.addEventListener('click', downloadAscii);
         
         function downloadAscii() {
-            // Flash effect
             flash.style.opacity = "0.7";
             setTimeout(() => {
                 flash.style.opacity = "0";
             }, 100);
             
-            // Create a new canvas for the ASCII art as an image
             const downloadCanvas = document.createElement('canvas');
             const downloadCtx = downloadCanvas.getContext('2d');
             
-            // Set the size based on the ASCII content
             const lines = asciiOutput.textContent.split('\n');
             const lineCount = lines.length;
             const lineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
             
-            // Use a higher resolution for the download image that matches what's on screen
             const computedStyle = window.getComputedStyle(asciiOutput);
             const fontSize = parseFloat(computedStyle.fontSize);
             const charWidth = fontSize * 0.6;
@@ -483,37 +413,31 @@
             downloadCanvas.width = lineLength * charWidth;
             downloadCanvas.height = lineCount * charHeight;
             
-            // Fill with black background
             downloadCtx.fillStyle = '#000';
             downloadCtx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
             
-            // Set text properties
             downloadCtx.font = `${charHeight}px 'Courier New', monospace`;
             downloadCtx.fillStyle = '#fff';
             downloadCtx.textBaseline = 'top';
             
-            // Draw the ASCII characters
             lines.forEach((line, i) => {
-                // Only draw non-empty lines
                 if (line.trim().length > 0) {
                     downloadCtx.fillText(line, 0, i * charHeight);
                 }
             });
             
-            // Create and trigger download
             const dataUrl = downloadCanvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = dataUrl;
             
-            // Get the current date for the filename
             let fileNamePrefix = currentMode === "camera" ? "asciicam" : "asciiimage";
             link.download = fileNamePrefix + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
             
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }  
-        // Handle window resize
+        }
+        
         window.addEventListener('resize', function() {
             width = window.innerWidth;
             asciiWidth = Math.floor(width / 6);
@@ -530,16 +454,16 @@
                 canvas.setAttribute('width', width);
                 canvas.setAttribute('height', height);
                 
-                asciiHeight = Math.floor(height / 10);
+                // Fix aspect ratio calculation
+                const aspectRatio = width / height;
+                asciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
             }
             
-            // If in image mode, re-convert the current image
             if (currentMode === "image") {
                 convertImageToAscii();
             }
         }, false);
         
-        // Initialize camera on page load
         initCamera();
     </script>
 </body>
