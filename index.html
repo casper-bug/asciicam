@@ -77,11 +77,12 @@
         
         .controls {
             position: fixed;
-            bottom: 20px;
+            bottom: 40px;
             left: 0;
             right: 0;
             display: flex;
             justify-content: space-around;
+            align-items: center;
             padding: 0 20px;
             z-index: 100;
         }
@@ -99,6 +100,34 @@
             justify-content: center;
             align-items: center;
             box-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .small-btn {
+            width: 45px;
+            height: 45px;
+        }
+        
+        #capture-btn {
+            width: 70px;
+            height: 70px;
+            background-color: #f83;
+            transform: translateY(-15px);
+            box-shadow: 0 6px 12px rgba(255, 136, 51, 0.5);
+        }
+        
+        #capture-btn:hover {
+            transform: translateY(-18px) scale(1.05);
+            box-shadow: 0 8px 16px rgba(255, 136, 51, 0.6);
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(255, 255, 255, 0.4);
+        }
+        
+        .small-btn:hover {
+            transform: scale(1.1);
         }
         
         #file-input {
@@ -138,6 +167,23 @@
             object-fit: contain;
         }
         
+        /* Capture button highlight effect */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 136, 51, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(255, 136, 51, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 136, 51, 0);
+            }
+        }
+        
+        #capture-btn {
+            animation: pulse 2s infinite;
+        }
+        
         /* Media Queries */
         @media (min-width: 768px) {
             #ascii-output {
@@ -146,8 +192,23 @@
             }
             
             .control-btn {
-                width: 70px;
-                height: 70px;
+                width: 60px;
+                height: 60px;
+            }
+            
+            .small-btn {
+                width: 50px;
+                height: 50px;
+            }
+            
+            #capture-btn {
+                width: 80px;
+                height: 80px;
+                transform: translateY(-20px);
+            }
+            
+            #capture-btn:hover {
+                transform: translateY(-23px) scale(1.05);
             }
             
             .title {
@@ -162,6 +223,16 @@
                 font-size: 10px;
                 line-height: 0.8;
             }
+            
+            #capture-btn {
+                width: 90px;
+                height: 90px;
+                transform: translateY(-25px);
+            }
+            
+            #capture-btn:hover {
+                transform: translateY(-28px) scale(1.05);
+            }
         }
         
         @media (max-width: 480px) {
@@ -173,6 +244,21 @@
             .control-btn {
                 width: 50px;
                 height: 50px;
+            }
+            
+            .small-btn {
+                width: 40px;
+                height: 40px;
+            }
+            
+            #capture-btn {
+                width: 65px;
+                height: 65px;
+                transform: translateY(-12px);
+            }
+            
+            #capture-btn:hover {
+                transform: translateY(-14px) scale(1.05);
             }
             
             .title {
@@ -191,25 +277,25 @@
         <canvas id="canvas"></canvas>
         <img id="image-preview" class="image-preview" />
         <div class="controls">
-            <button class="control-btn" id="camera-btn" title="Switch Camera">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button class="control-btn small-btn" id="camera-btn" title="Switch Camera">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M16 16v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"></path>
                 </svg>
             </button>
-            <button class="control-btn" id="gallery-btn" title="Select Image">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button class="control-btn" id="capture-btn" title="Capture">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+            </button>
+            <button class="control-btn small-btn" id="gallery-btn" title="Select Image">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
             </button>
             <input type="file" id="file-input" accept="image/*">
-            <button class="control-btn" id="capture-btn" title="Capture">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-            </button>
         </div>
         <div id="error-message"></div>
         <div class="flash" id="flash"></div>
@@ -487,40 +573,4 @@
             link.href = dataUrl;
             
             let fileNamePrefix = currentMode === "camera" ? "asciicam" : "asciiimage";
-            link.download = fileNamePrefix + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            if (currentMode === "camera" && streaming) {
-                // Get the video's natural dimensions
-                const videoWidth = video.videoWidth;
-                const videoHeight = video.videoHeight;
-                
-                // Recalculate ASCII dimensions
-                const asciiDim = calcAsciiDimensions();
-                
-                // Update canvas and ASCII output
-                convertToAscii(videoWidth, videoHeight, asciiDim.cols, asciiDim.rows);
-            } else if (currentMode === "image") {
-                // Get current image dimensions from canvas
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-                
-                // Recalculate ASCII dimensions
-                const asciiDim = calcAsciiDimensions();
-                
-                // Update ASCII output
-                convertToAscii(imgWidth, imgHeight, asciiDim.cols, asciiDim.rows);
-            }
-        }, false);
-        
-        // Initialize camera
-        initCamera();
-    </script>
-</body>
-</html>
+            link.download = fileNamePrefix
