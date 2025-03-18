@@ -134,18 +134,46 @@
             display: none;
         }
         
-        #error-message {
-            color: red;
-            text-align: center;
-            padding: 20px;
-            display: none;
+        #error-container {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
+            text-align: center;
             z-index: 150;
+            display: none;
+        }
+        
+        #error-camera-svg {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+        }
+        
+        #error-message {
+            color: #fff;
+            font-size: 16px;
+            max-width: 300px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+        }
+        
+        #error-try-again {
+            margin-top: 20px;
+            background-color: #f83;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        #error-try-again:hover {
+            background-color: #ff9944;
+            transform: scale(1.05);
         }
         
         .flash {
@@ -216,6 +244,16 @@
                 top: 20px;
                 left: 20px;
             }
+            
+            #error-camera-svg {
+                width: 150px;
+                height: 150px;
+            }
+            
+            #error-message {
+                font-size: 18px;
+                max-width: 400px;
+            }
         }
         
         @media (min-width: 1200px) {
@@ -232,6 +270,11 @@
             
             #capture-btn:hover {
                 transform: translateY(-28px) scale(1.05);
+            }
+            
+            #error-camera-svg {
+                width: 180px;
+                height: 180px;
             }
         }
         
@@ -263,6 +306,16 @@
             
             .title {
                 font-size: 16px;
+            }
+            
+            #error-camera-svg {
+                width: 100px;
+                height: 100px;
+            }
+            
+            #error-message {
+                font-size: 14px;
+                max-width: 280px;
             }
         }
     </style>
@@ -297,7 +350,15 @@
             </button>
             <input type="file" id="file-input" accept="image/*">
         </div>
-        <div id="error-message"></div>
+        <div id="error-container">
+            <svg id="error-camera-svg" viewBox="0 0 24 24" fill="none" stroke="#f83" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+                <line x1="5" y1="5" x2="19" y2="19" stroke="red" stroke-width="2"></line>
+            </svg>
+            <div id="error-message">Camera access denied. Please enable camera access in your browser settings to use ASCIICAM.</div>
+            <button id="error-try-again">Try Again</button>
+        </div>
         <div class="flash" id="flash"></div>
     </div>
 
@@ -312,7 +373,9 @@
         const galleryBtn = document.getElementById('gallery-btn');
         const fileInput = document.getElementById('file-input');
         const imagePreview = document.getElementById('image-preview');
+        const errorContainer = document.getElementById('error-container');
         const errorMessage = document.getElementById('error-message');
+        const errorTryAgain = document.getElementById('error-try-again');
         const flash = document.getElementById('flash');
         
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -323,6 +386,7 @@
         let facingMode = "user";
         let currentMode = "camera";
         let animationFrameId = null;
+        let cameraAccessDenied = false;
         
         // Calculate optimal ASCII dimensions
         function calcAsciiDimensions() {
@@ -367,6 +431,7 @@
             
             currentMode = "camera";
             imagePreview.style.display = "none";
+            errorContainer.style.display = "none"; // Hide error container when trying to init camera
             
             navigator.mediaDevices.getUserMedia({
                 video: {
@@ -378,13 +443,21 @@
             .then(stream => {
                 video.srcObject = stream;
                 video.play();
-                errorMessage.style.display = "none";
+                errorContainer.style.display = "none";
+                cameraAccessDenied = false;
             })
             .catch(err => {
                 console.error("An error occurred: " + err);
-                errorMessage.textContent = "Camera error: " + err.message;
-                errorMessage.style.display = "block";
+                cameraAccessDenied = true;
+                showCameraError(err.message);
             });
+        }
+        
+        function showCameraError(message) {
+            errorMessage.textContent = "Camera access denied. Please enable camera access in your browser settings to use ASCIICAM.";
+            errorContainer.style.display = "flex";
+            errorContainer.style.flexDirection = "column";
+            errorContainer.style.alignItems = "center";
         }
         
         cameraBtn.addEventListener('click', () => {
@@ -400,6 +473,10 @@
             fileInput.click();
         });
         
+        errorTryAgain.addEventListener('click', () => {
+            initCamera();
+        });
+        
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) {
                 if (video.srcObject) {
@@ -411,6 +488,7 @@
                 }
                 
                 currentMode = "image";
+                errorContainer.style.display = "none";
                 
                 const file = e.target.files[0];
                 const reader = new FileReader();
@@ -527,7 +605,14 @@
             asciiOutput.style.transform = `scale(${scale})`;
         }
         
-        captureBtn.addEventListener('click', downloadAscii);
+        captureBtn.addEventListener('click', () => {
+            if (cameraAccessDenied && currentMode === "camera") {
+                // If camera access is denied and we're in camera mode, try to reinitialize the camera
+                initCamera();
+            } else {
+                downloadAscii();
+            }
+        });
         
         function downloadAscii() {
             // Flash effect
