@@ -17,6 +17,7 @@
             color: #fff;
             overflow: hidden;
             height: 100vh;
+            width: 100vw;
             display: flex;
             flex-direction: column;
         }
@@ -25,9 +26,14 @@
             position: relative;
             flex: 1;
             overflow: hidden;
+            width: 100%;
+            height: 100%;
         }
         
         #ascii-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
@@ -39,13 +45,14 @@
         
         #ascii-output {
             font-family: 'Courier New', monospace;
-            font-size: 6px;
-            line-height: 0.8;
+            font-size: 5px;
+            line-height: 0.7;
             letter-spacing: 0;
             white-space: pre;
             color: #fff;
             text-align: center;
             background-color: #000;
+            transform-origin: center center;
         }
         
         #video {
@@ -66,14 +73,6 @@
             color: #fff;
             z-index: 200;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-        }
-        
-        @media (min-width: 768px) {
-            .title {
-                font-size: 24px;
-                top: 20px;
-                left: 20px;
-            }
         }
         
         .controls {
@@ -106,23 +105,18 @@
             display: none;
         }
         
-        @media (min-width: 768px) {
-            #ascii-output {
-                font-size: 10px;
-                line-height: 0.85;
-            }
-            
-            .control-btn {
-                width: 70px;
-                height: 70px;
-            }
-        }
-        
         #error-message {
             color: red;
             text-align: center;
             padding: 20px;
             display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            z-index: 150;
         }
         
         .flash {
@@ -142,6 +136,48 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+        }
+        
+        /* Media Queries */
+        @media (min-width: 768px) {
+            #ascii-output {
+                font-size: 8px;
+                line-height: 0.75;
+            }
+            
+            .control-btn {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .title {
+                font-size: 24px;
+                top: 20px;
+                left: 20px;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            #ascii-output {
+                font-size: 10px;
+                line-height: 0.8;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #ascii-output {
+                font-size: 4px;
+                line-height: 0.65;
+            }
+            
+            .control-btn {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .title {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
@@ -184,6 +220,7 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const asciiOutput = document.getElementById('ascii-output');
+        const asciiContainer = document.getElementById('ascii-container');
         const captureBtn = document.getElementById('capture-btn');
         const cameraBtn = document.getElementById('camera-btn');
         const galleryBtn = document.getElementById('gallery-btn');
@@ -196,12 +233,46 @@
         
         let streaming = false;
         let width = window.innerWidth;
-        let height = 0;
-        let asciiWidth = Math.floor(width / 6);
-        let asciiHeight = 0;
+        let height = window.innerHeight;
         let facingMode = "user";
         let currentMode = "camera";
         let animationFrameId = null;
+        
+        // Calculate optimal ASCII dimensions
+        function calcAsciiDimensions() {
+            // Get the container dimensions
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            
+            // Base resolution on screen size
+            let baseFontSize;
+            if (containerWidth <= 480) {
+                baseFontSize = 4; // Mobile
+            } else if (containerWidth <= 768) {
+                baseFontSize = 5; // Small tablet
+            } else if (containerWidth <= 1200) {
+                baseFontSize = 8; // Tablet/small desktop
+            } else {
+                baseFontSize = 10; // Large desktop
+            }
+            
+            // Calculate char width and height based on font size
+            const charWidth = baseFontSize * 0.6;
+            const charHeight = baseFontSize * 0.7;
+            
+            // Calculate how many characters can fit in the container
+            // Add extra characters to ensure overflow for seamless effect
+            const extraChars = Math.ceil(containerWidth * 0.1 / charWidth);
+            const cols = Math.ceil(containerWidth / charWidth) + extraChars;
+            const rows = Math.ceil(containerHeight / charHeight) + extraChars;
+            
+            return {
+                cols: cols,
+                rows: rows,
+                charWidth: charWidth,
+                charHeight: charHeight
+            };
+        }
         
         function initCamera() {
             if (video.srcObject) {
@@ -261,35 +332,20 @@
                 reader.onload = (event) => {
                     const img = new Image();
                     img.onload = () => {
-                        width = img.width;
-                        height = img.height;
+                        const imgWidth = img.width;
+                        const imgHeight = img.height;
                         
-                        const maxWidth = window.innerWidth;
-                        const maxHeight = window.innerHeight;
+                        // Set canvas to image dimensions for accurate processing
+                        canvas.width = imgWidth;
+                        canvas.height = imgHeight;
                         
-                        let newWidth = width;
-                        let newHeight = height;
+                        ctx.drawImage(img, 0, 0, imgWidth, imgHeight);
                         
-                        if (width > maxWidth || height > maxHeight) {
-                            const ratioWidth = maxWidth / width;
-                            const ratioHeight = maxHeight / height;
-                            const ratio = Math.min(ratioWidth, ratioHeight);
-                            
-                            newWidth = width * ratio;
-                            newHeight = height * ratio;
-                        }
+                        // Get optimal dimensions for ASCII art
+                        const asciiDim = calcAsciiDimensions();
                         
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Ensure proper aspect ratio
-                        const aspectRatio = width / height;
-                        asciiWidth = Math.floor(newWidth / 6);
-                        asciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
-                        
-                        convertImageToAscii();
+                        // Convert image to ASCII
+                        convertToAscii(imgWidth, imgHeight, asciiDim.cols, asciiDim.rows);
                         
                         setTimeout(() => {
                             downloadAscii();
@@ -305,77 +361,55 @@
         
         video.addEventListener('canplay', function() {
             if (!streaming) {
-                height = video.videoHeight / (video.videoWidth / width);
+                // Get the video's natural dimensions
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
                 
-                if (isNaN(height)) {
-                    height = width / (4/3);
-                }
+                // Set canvas dimensions to match video
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
                 
-                video.setAttribute('width', width);
-                video.setAttribute('height', height);
-                canvas.setAttribute('width', width);
-                canvas.setAttribute('height', height);
-                
-                // Properly calculate ascii height based on aspect ratio
-                const aspectRatio = width / height;
-                asciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
+                // Calculate optimal ASCII dimensions
+                const asciiDim = calcAsciiDimensions();
                 
                 streaming = true;
-                convertToAscii();
+                
+                // Start the ASCII conversion loop
+                convertToAsciiLoop(videoWidth, videoHeight, asciiDim.cols, asciiDim.rows);
             }
         }, false);
         
-        function convertToAscii() {
+        function convertToAsciiLoop(sourceWidth, sourceHeight, cols, rows) {
             if (!streaming || currentMode !== "camera") return;
             
-            ctx.drawImage(video, 0, 0, width, height);
-            const imageData = ctx.getImageData(0, 0, width, height);
-            const data = imageData.data;
+            // Draw current video frame to canvas
+            ctx.drawImage(video, 0, 0, sourceWidth, sourceHeight);
             
-            const aspectRatio = width / height;
-            // Fix aspect ratio problems by calculating proper height
-            const calculatedAsciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
+            // Convert to ASCII
+            convertToAscii(sourceWidth, sourceHeight, cols, rows);
             
-            const skipX = Math.max(1, Math.floor(width / asciiWidth));
-            const skipY = Math.max(1, Math.floor(height / calculatedAsciiHeight));
-            
-            let result = '';
-            
-            for (let y = 0; y < height; y += skipY) {
-                for (let x = 0; x < width; x += skipX) {
-                    const idx = (y * width + x) * 4;
-                    const r = data[idx];
-                    const g = data[idx + 1];
-                    const b = data[idx + 2];
-                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-                    const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
-                    result += asciiChars[charIndex];
-                }
-                if (y + skipY < height) {
-                    result += '\n';
-                }
-            }
-            
-            asciiOutput.textContent = result;
-            animationFrameId = requestAnimationFrame(convertToAscii);
+            // Continue the loop
+            animationFrameId = requestAnimationFrame(() => {
+                const asciiDim = calcAsciiDimensions();
+                convertToAsciiLoop(sourceWidth, sourceHeight, asciiDim.cols, asciiDim.rows);
+            });
         }
         
-        function convertImageToAscii() {
-            const imageData = ctx.getImageData(0, 0, width, height);
+        function convertToAscii(sourceWidth, sourceHeight, cols, rows) {
+            // Get image data from canvas
+            const imageData = ctx.getImageData(0, 0, sourceWidth, sourceHeight);
             const data = imageData.data;
             
-            const aspectRatio = width / height;
-            // Fix aspect ratio by using proper character width-to-height ratio (~0.5)
-            const calculatedHeight = Math.floor(asciiWidth / (aspectRatio * 0.5));
-            
-            const skipX = Math.floor(width / asciiWidth);
-            const skipY = Math.floor(height / calculatedHeight);
+            // Calculate step sizes to sample the original image
+            const stepX = Math.max(1, Math.floor(sourceWidth / cols));
+            const stepY = Math.max(1, Math.floor(sourceHeight / rows));
             
             let result = '';
             
-            for (let y = 0; y < height; y += skipY) {
-                for (let x = 0; x < width; x += skipX) {
-                    const idx = (y * width + x) * 4;
+            // Generate ASCII art
+            for (let y = 0; y < sourceHeight; y += stepY) {
+                for (let x = 0; x < sourceWidth; x += stepX) {
+                    const idx = (y * sourceWidth + x) * 4;
                     const r = data[idx];
                     const g = data[idx + 1];
                     const b = data[idx + 2];
@@ -383,17 +417,34 @@
                     const charIndex = Math.floor((gray / 255) * (asciiChars.length - 1));
                     result += asciiChars[charIndex];
                 }
-                if (y + skipY < height) {
-                    result += '\n';
-                }
+                result += '\n';
             }
             
+            // Set the ASCII output
             asciiOutput.textContent = result;
+            
+            // Center the ASCII output in the container
+            const outputWidth = cols * 0.6; // Approximate character width in em units
+            const outputHeight = rows * 0.7; // Approximate character height in em units
+            
+            // Make sure ASCII fills the screen by scaling it appropriately
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            
+            const scaleX = containerWidth / (outputWidth * parseFloat(getComputedStyle(asciiOutput).fontSize));
+            const scaleY = containerHeight / (outputHeight * parseFloat(getComputedStyle(asciiOutput).fontSize));
+            
+            // Use the larger scale to ensure it fills the screen
+            const scale = Math.max(scaleX, scaleY) * 1.2; // Add 20% extra scaling for overflow
+            
+            // Apply the transformation
+            asciiOutput.style.transform = `scale(${scale})`;
         }
         
         captureBtn.addEventListener('click', downloadAscii);
         
         function downloadAscii() {
+            // Flash effect
             flash.style.opacity = "0.7";
             setTimeout(() => {
                 flash.style.opacity = "0";
@@ -410,22 +461,27 @@
             const fontSize = parseFloat(computedStyle.fontSize);
             const charWidth = fontSize * 0.6;
             const charHeight = fontSize * 1.2;
+            
             downloadCanvas.width = lineLength * charWidth;
             downloadCanvas.height = lineCount * charHeight;
             
+            // Background
             downloadCtx.fillStyle = '#000';
             downloadCtx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
             
-            downloadCtx.font = `${charHeight}px 'Courier New', monospace`;
+            // Text settings
+            downloadCtx.font = `${fontSize}px 'Courier New', monospace`;
             downloadCtx.fillStyle = '#fff';
             downloadCtx.textBaseline = 'top';
             
+            // Draw each line of ASCII
             lines.forEach((line, i) => {
                 if (line.trim().length > 0) {
                     downloadCtx.fillText(line, 0, i * charHeight);
                 }
             });
             
+            // Create download link
             const dataUrl = downloadCanvas.toDataURL('image/png');
             const link = document.createElement('a');
             link.href = dataUrl;
@@ -438,32 +494,32 @@
             document.body.removeChild(link);
         }
         
+        // Handle window resize
         window.addEventListener('resize', function() {
-            width = window.innerWidth;
-            asciiWidth = Math.floor(width / 6);
-            
-            if (streaming && currentMode === "camera") {
-                height = video.videoHeight / (video.videoWidth / width);
+            if (currentMode === "camera" && streaming) {
+                // Get the video's natural dimensions
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
                 
-                if (isNaN(height)) {
-                    height = width / (4/3);
-                }
+                // Recalculate ASCII dimensions
+                const asciiDim = calcAsciiDimensions();
                 
-                video.setAttribute('width', width);
-                video.setAttribute('height', height);
-                canvas.setAttribute('width', width);
-                canvas.setAttribute('height', height);
+                // Update canvas and ASCII output
+                convertToAscii(videoWidth, videoHeight, asciiDim.cols, asciiDim.rows);
+            } else if (currentMode === "image") {
+                // Get current image dimensions from canvas
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
                 
-                // Fix aspect ratio calculation
-                const aspectRatio = width / height;
-                asciiHeight = Math.floor(asciiWidth / aspectRatio / 1.8);
-            }
-            
-            if (currentMode === "image") {
-                convertImageToAscii();
+                // Recalculate ASCII dimensions
+                const asciiDim = calcAsciiDimensions();
+                
+                // Update ASCII output
+                convertToAscii(imgWidth, imgHeight, asciiDim.cols, asciiDim.rows);
             }
         }, false);
         
+        // Initialize camera
         initCamera();
     </script>
 </body>
