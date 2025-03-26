@@ -363,7 +363,7 @@
     </div>
 
     <script>
-        const asciiChars = [' ', '.', ':', '-', '=', '+', '*', '#', '%', '8', '@'];
+        const asciiChars = [' ', '.', ',', '-', '~', '+', '=', 'o', 'a', '#', '%', '8', '@'];
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const asciiOutput = document.getElementById('ascii-output');
@@ -412,7 +412,7 @@
             
             // Calculate how many characters can fit in the container
             // Add extra characters to ensure overflow for seamless effect
-            const extraChars = Math.ceil(containerWidth * 0.2 / charWidth);
+            const extraChars = Math.ceil(containerWidth * 0.1 / charWidth);
             const cols = Math.ceil(containerWidth / charWidth) + extraChars;
             const rows = Math.ceil(containerHeight / charHeight) + extraChars;
             
@@ -431,13 +431,13 @@
             
             currentMode = "camera";
             imagePreview.style.display = "none";
-            errorContainer.style.display = "none";
+            errorContainer.style.display = "none"; // Hide error container when trying to init camera
             
             navigator.mediaDevices.getUserMedia({
                 video: {
                     facingMode: facingMode,
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
             })
             .then(stream => {
@@ -588,22 +588,26 @@
             asciiOutput.textContent = result;
             
             // Center the ASCII output in the container
-            const outputWidth = cols * 0.6;
-            const outputHeight = rows * 0.7;
+            const outputWidth = cols * 0.6; // Approximate character width in em units
+            const outputHeight = rows * 0.7; // Approximate character height in em units
             
+            // Make sure ASCII fills the screen by scaling it appropriately
             const containerWidth = window.innerWidth;
             const containerHeight = window.innerHeight;
             
             const scaleX = containerWidth / (outputWidth * parseFloat(getComputedStyle(asciiOutput).fontSize));
             const scaleY = containerHeight / (outputHeight * parseFloat(getComputedStyle(asciiOutput).fontSize));
             
-            const scale = Math.max(scaleX, scaleY) * 1.2;
+            // Use the larger scale to ensure it fills the screen
+            const scale = Math.max(scaleX, scaleY) * 1.2; // Add 20% extra scaling for overflow
             
+            // Apply the transformation
             asciiOutput.style.transform = `scale(${scale})`;
         }
         
         captureBtn.addEventListener('click', () => {
             if (cameraAccessDenied && currentMode === "camera") {
+                // If camera access is denied and we're in camera mode, try to reinitialize the camera
                 initCamera();
             } else {
                 downloadAscii();
@@ -616,92 +620,72 @@
             setTimeout(() => {
                 flash.style.opacity = "0";
             }, 100);
-
+            
             const downloadCanvas = document.createElement('canvas');
             const downloadCtx = downloadCanvas.getContext('2d');
             
-            // Get ASCII text and split into lines
-            const asciiText = asciiOutput.textContent;
-            const lines = asciiText.split('\n');
+            const lines = asciiOutput.textContent.split('\n');
             const lineCount = lines.length;
             const lineLength = lines.reduce((max, line) => Math.max(max, line.length), 0);
             
-            // Calculate dimensions with higher resolution
-            const qualityFactor = 4; // Increase this for higher quality (but larger files)
-            const baseFontSize = 16 * qualityFactor; // Base font size in pixels
+            const computedStyle = window.getComputedStyle(asciiOutput);
+            const fontSize = parseFloat(computedStyle.fontSize);
+            const charWidth = fontSize * 0.6;
+            const charHeight = fontSize * 1.2;
             
-            // Set canvas dimensions with quality factor
-            downloadCanvas.width = lineLength * baseFontSize * 0.6;
-            downloadCanvas.height = lineCount * baseFontSize * 1.2;
+            downloadCanvas.width = lineLength * charWidth;
+            downloadCanvas.height = lineCount * charHeight;
             
             // Background
             downloadCtx.fillStyle = '#000';
             downloadCtx.fillRect(0, 0, downloadCanvas.width, downloadCanvas.height);
             
-            // Text settings - use a crisp monospace font
-            downloadCtx.font = `${baseFontSize}px 'Courier New', monospace`;
+            // Text settings
+            downloadCtx.font = `${fontSize}px 'Courier New', monospace`;
             downloadCtx.fillStyle = '#fff';
             downloadCtx.textBaseline = 'top';
-            downloadCtx.textAlign = 'left';
             
-            // Draw each line of ASCII with precise positioning
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].trim().length > 0) {
-                    downloadCtx.fillText(
-                        lines[i], 
-                        0, 
-                        i * baseFontSize * 1.2 // Line height
-                    );
+            // Draw each line of ASCII
+            lines.forEach((line, i) => {
+                if (line.trim().length > 0) {
+                    downloadCtx.fillText(line, 0, i * charHeight);
                 }
-            }
+            });
+             
+            // Create download link
+            const dataUrl = downloadCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
             
-            // Optional: For even better quality, you can scale down a larger canvas
-            if (qualityFactor > 1) {
-                const finalCanvas = document.createElement('canvas');
-                const finalCtx = finalCanvas.getContext('2d');
-                
-                // Set final dimensions (scaled down)
-                finalCanvas.width = downloadCanvas.width / qualityFactor;
-                finalCanvas.height = downloadCanvas.height / qualityFactor;
-                
-                // Draw the high-res canvas scaled down to the final canvas
-                finalCtx.imageSmoothingEnabled = true;
-                finalCtx.drawImage(
-                    downloadCanvas,
-                    0, 0, downloadCanvas.width, downloadCanvas.height,
-                    0, 0, finalCanvas.width, finalCanvas.height
-                );
-                
-                // Use the final canvas for download
-                const dataUrl = finalCanvas.toDataURL('image/png', 1.0); // Maximum quality
-                triggerDownload(dataUrl);
-            } else {
-                const dataUrl = downloadCanvas.toDataURL('image/png', 1.0);
-                triggerDownload(dataUrl);
-            }
+            let fileNamePrefix = currentMode === "camera" ? "asciicam" : "asciiimage";
+            link.download = fileNamePrefix + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
             
-            function triggerDownload(dataUrl) {
-                const link = document.createElement('a');
-                link.href = dataUrl;
-                let fileNamePrefix = currentMode === "camera" ? "asciicam" : "asciiimage";
-                link.download = fileNamePrefix + '_' + new Date().toISOString().replace(/[:.]/g, '-') + '.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
         
         // Handle window resize
         window.addEventListener('resize', function() {
             if (currentMode === "camera" && streaming) {
+                // Get the video's natural dimensions
                 const videoWidth = video.videoWidth;
                 const videoHeight = video.videoHeight;
+                
+                // Recalculate ASCII dimensions
                 const asciiDim = calcAsciiDimensions();
+                
+                // Update canvas and ASCII output
                 convertToAscii(videoWidth, videoHeight, asciiDim.cols, asciiDim.rows);
             } else if (currentMode === "image") {
+                // Get current image dimensions from canvas
                 const imgWidth = canvas.width;
                 const imgHeight = canvas.height;
+                
+                // Recalculate ASCII dimensions
                 const asciiDim = calcAsciiDimensions();
+                
+                // Update ASCII output
                 convertToAscii(imgWidth, imgHeight, asciiDim.cols, asciiDim.rows);
             }
         }, false);
